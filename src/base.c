@@ -537,6 +537,48 @@ bool bBoundarySurround(const int boundary1Type, const double boundary1[],
 								>= boundary1[2] + boundary1[3] + clearance;
 			}
 			return areacheck && lengthcheck;
+		case CYLINDER: //TODO test and verify, perhaps add test with different orientations
+			//TODO spread this definition to other calculations! far more typo resistant
+			if (boundary1[4] == boundary2[4]) {
+				int along = 0;
+				int across1 = 0;
+				int across2 = 0;
+				if (boundary1[4] == PLANE_XY) {
+					across1 = 0;
+					across2 = 1;
+					along = 2;
+				} else if (boundary1[4] == PLANE_XZ) {
+					across1 = 0;
+					along = 1;
+					across2 = 2;
+				} else if (boundary1[4] == PLANE_YZ) {
+					along = 0;
+					across1 = 1;
+					across2 = 2;
+				} else {
+					fprintf(stderr,
+							"ERROR: Cannot determine the orientation of a %s.\n",
+							boundaryString(boundary1Type));
+					return false;
+				}
+				lengthcheck = boundary1[along] >= boundary2[along] + clearance
+						&& boundary1[along] + boundary1[5]
+								<= boundary2[along] + boundary2[5] - clearance;
+				areacheck = sqrt(
+						squareDBL(boundary1[across1] - boundary2[across1])
+								+ squareDBL(
+										boundary1[across2]
+												- boundary2[across2]))
+						<= boundary2[3] - boundary1[3] - clearance;
+				return lengthcheck && areacheck;
+			} else {
+
+				fprintf(stderr,
+						"ERROR: Cannot determine whether a %s is inside of a %s of a different orientation.\n",
+						boundaryString(boundary2Type),
+						boundaryString(boundary1Type));
+				return false;
+			}
 		default:
 			fprintf(stderr,
 					"ERROR: Cannot determine whether a %s is inside of a %s.\n",
@@ -1409,9 +1451,9 @@ int intersectBoundary(const int boundary1Type, const double boundary1[],
 			return RECTANGLE;
 		else
 			return RECTANGULAR_BOX;
-	} else if (boundary1Type == SPHERE || boundary2Type == SPHERE) {
+	} else if (boundary1Type == SPHERE || boundary2Type == SPHERE || boundary1Type == CYLINDER || boundary2Type == CYLINDER) {
 		// At least one of the boundaries is a sphere. One boundary must be
-		// contained fully within the other boundary
+		// contained fully within the other boundary TODO cylinders added, verify
 		if (bBoundarySurround(boundary1Type, boundary1, boundary2Type,
 				boundary2, 0.)) {
 			// boundary 1 is within boundary 2
