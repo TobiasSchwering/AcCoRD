@@ -142,7 +142,7 @@ void initializeRegionArray(struct region regionArray[],
 				regionArray[i].dimension = DIM_3D;
 				regionArray[i].plane = PLANE_3D;
 			}
-		} else
+		} else if (subvol_spec[i].shape == SPHERE)
 		{
 			regionArray[i].actualSubSize = subvol_spec[i].radius;
 			regionArray[i].boundary[0] = subvol_spec[i].xAnch;
@@ -153,8 +153,25 @@ void initializeRegionArray(struct region regionArray[],
 			regionArray[i].boundary[5] = 0.;
 			regionArray[i].dimension = DIM_3D;
 			regionArray[i].plane = PLANE_3D;
+		} else if (subvol_spec[i].shape == CYLINDER)
+		{ //TODO changed, finish and test
+			//boundary[4] is plane of base surface
+			//boundary[5] is length, 2 of the nums are forced zero
+			regionArray[i].actualSubSize = subvol_spec[i].radius;
+			regionArray[i].boundary[0] = subvol_spec[i].xAnch;
+			regionArray[i].boundary[1] = subvol_spec[i].yAnch;
+			regionArray[i].boundary[2] = subvol_spec[i].zAnch;
+			regionArray[i].boundary[3] = subvol_spec[i].radius;
+			if (subvol_spec[i].numX)
+				regionArray[i].boundary[4] = PLANE_YZ;
+			if (subvol_spec[i].numY)
+				regionArray[i].boundary[4] = PLANE_XZ;
+			if (subvol_spec[i].numZ)
+				regionArray[i].boundary[4] = PLANE_XY;
+			regionArray[i].boundary[5] = SUBVOL_BASE_SIZE * (subvol_spec[i].numX + subvol_spec[i].numY + subvol_spec[i].numZ);
+			regionArray[i].dimension = DIM_3D;
+			regionArray[i].plane = PLANE_3D;
 		}
-		
 		switch(regionArray[i].spec.type)
 		{
 			case REGION_NORMAL:
