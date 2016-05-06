@@ -133,36 +133,74 @@ bool bBoundaryIntersect(const int boundary1Type, const double boundary1[],
 							boundary2, 0.)
 					&& !bBoundarySurround(SPHERE, boundary2, RECTANGULAR_BOX,
 							boundary1, 0.));
-//		case CYLINDER: TODO
-//			if (boundary2[4] == PLANE_XY) {
-//				lengthcheck = (boundary1[5] >= boundary2[2])
-//						&& (boundary1[4] <= boundary2[2] + boundary2[5]);
-//				areacheck = //first check if one of the 4 rectangle edges is within the intersection circle
-//						sqrt(
-//								squareDBL(boundary1[0] - boundary2[0])
-//										+ squareDBL(boundary1[2] - boundary2[1])
-//										<= boundary2[5])
-//								|| sqrt(
-//										squareDBL(boundary1[0] - boundary2[0])
-//												+ squareDBL(
-//														boundary1[3]
-//																- boundary2[1])
-//												<= boundary2[5])
-//								|| sqrt(
-//										squareDBL(boundary1[1] - boundary2[0])
-//												+ squareDBL(
-//														boundary1[2]
-//																- boundary2[1])
-//												<= boundary2[5])
-//								|| sqrt(
-//										squareDBL(boundary1[1] - boundary2[0])
-//												+ squareDBL(
-//														boundary1[3]
-//																- boundary2[1])
-//												<= boundary2[5]) ||
-//								// then if the center of the circle is within the rectangle
-//								(boundary1[0]);
-//			}
+		case CYLINDER: //TODO
+			; //dummy statement necessary to allow declarations after a label
+			bool rectInCircle;
+			bool circleInRect;
+			int along = 0;
+			int across1 = 0;
+			int across2 = 0;
+
+			if (boundary2[4] == PLANE_XY) {
+				across1 = 0;
+				across2 = 1;
+				along = 2;
+			} else if (boundary2[4] == PLANE_XZ) {
+				across1 = 0;
+				along = 1;
+				across2 = 2;
+			} else if (boundary2[4] == PLANE_YZ) {
+				along = 0;
+				across1 = 1;
+				across2 = 2;
+			} else {
+				fprintf(stderr,
+						"ERROR: Cannot determine the orientation of a %s.\n",
+						boundaryString(boundary1Type));
+				return false;
+			}
+			lengthcheck = boundary1[2 * along]
+					<= boundary2[along] + boundary2[5] - clearance
+					&& boundary1[2 * along + 1] >= boundary2[along] + clearance;
+			areacheck =
+					sqrt( //one of the edges of the rectangle inside the circle
+							squareDBL(
+									boundary1[2 * across1] - boundary2[across1])
+									+ squareDBL(
+											boundary1[2 * across2]
+													- boundary2[across2]))
+							<= boundary2[3] - clearance
+							|| sqrt(
+									squareDBL(
+											boundary1[2 * across1]
+													- boundary2[across1])
+											+ squareDBL(
+													boundary1[2 * across2]
+															- boundary2[across2]))
+									<= boundary2[3] - clearance
+							|| sqrt(
+									squareDBL(
+											boundary1[2 * across1]
+													- boundary2[across1])
+											+ squareDBL(
+													boundary1[2 * across2]
+															- boundary2[across2]))
+									<= boundary2[3] - clearance
+							|| sqrt(
+									squareDBL(
+											boundary1[2 * across1]
+													- boundary2[across1])
+											+ squareDBL(
+													boundary1[2 * across2]
+															- boundary2[across2]))
+									<= boundary2[3] - clearance
+							|| (boundary2[across1] >= boundary1[across1 * 2] //or the center of the circle is inside the rectangle
+							&& boundary2[across1] <= boundary1[across1 * 2 + 1]
+									&& boundary2[across2]
+											>= boundary1[across2 * 2]
+									&& boundary2[across2]
+											<= boundary1[across2 * 2 + 1]);
+			return (lengthcheck && areacheck);
 		default:
 			fprintf(stderr,
 					"ERROR: Cannot determine the intersection of a %s and a %s.\n",
@@ -197,6 +235,83 @@ bool bBoundaryIntersect(const int boundary1Type, const double boundary1[],
 							boundary1, 0.)
 					&& !bBoundarySurround(SPHERE, boundary1, RECTANGULAR_BOX,
 							boundary2, 0.));
+		default:
+			fprintf(stderr,
+					"ERROR: Cannot determine the intersection of a %s and a %s.\n",
+					boundaryString(boundary2Type),
+					boundaryString(boundary1Type));
+			return false;
+		}
+	case CYLINDER:
+		switch (boundary2Type) {
+		case RECTANGULAR_BOX:
+			; //dummy statement necessary to allow declarations after a label
+			bool rectInCircle;
+			bool circleInRect;
+			int along = 0;
+			int across1 = 0;
+			int across2 = 0;
+
+			if (boundary1[4] == PLANE_XY) {
+				across1 = 0;
+				across2 = 1;
+				along = 2;
+			} else if (boundary1[4] == PLANE_XZ) {
+				across1 = 0;
+				along = 1;
+				across2 = 2;
+			} else if (boundary1[4] == PLANE_YZ) {
+				along = 0;
+				across1 = 1;
+				across2 = 2;
+			} else {
+				fprintf(stderr,
+						"ERROR: Cannot determine the orientation of a %s.\n",
+						boundaryString(boundary1Type));
+				return false;
+			}
+			lengthcheck = boundary2[2 * along]
+					<= boundary1[along] + boundary1[5] - clearance
+					&& boundary2[2 * along + 1] >= boundary1[along] + clearance;
+			areacheck =
+					sqrt( //one of the edges of the rectangle inside the circle
+							squareDBL(
+									boundary2[2 * across1] - boundary1[across1])
+									+ squareDBL(
+											boundary2[2 * across2]
+													- boundary1[across2]))
+							<= boundary1[3] - clearance
+							|| sqrt(
+									squareDBL(
+											boundary2[2 * across1]
+													- boundary1[across1])
+											+ squareDBL(
+													boundary2[2 * across2]
+															- boundary1[across2]))
+									<= boundary1[3] - clearance
+							|| sqrt(
+									squareDBL(
+											boundary2[2 * across1]
+													- boundary1[across1])
+											+ squareDBL(
+													boundary2[2 * across2]
+															- boundary1[across2]))
+									<= boundary1[3] - clearance
+							|| sqrt(
+									squareDBL(
+											boundary2[2 * across1]
+													- boundary1[across1])
+											+ squareDBL(
+													boundary2[2 * across2]
+															- boundary1[across2]))
+									<= boundary1[3] - clearance
+							|| (boundary1[across1] >= boundary2[across1 * 2] //or the center of the circle is inside the rectangle
+							&& boundary1[across1] <= boundary2[across1 * 2 + 1]
+									&& boundary1[across2]
+											>= boundary2[across2 * 2]
+									&& boundary1[across2]
+											<= boundary2[across2 * 2 + 1]);
+			return (lengthcheck && areacheck);
 		default:
 			fprintf(stderr,
 					"ERROR: Cannot determine the intersection of a %s and a %s.\n",
@@ -1523,6 +1638,120 @@ int intersectBoundary(const int boundary1Type, const double boundary1[],
 			intersection[4] = 0.;
 			intersection[5] = 0.;
 			return RECTANGULAR_BOX;
+		} else if ((boundary1Type == CYLINDER
+				&& boundary2Type == RECTANGULAR_BOX)
+				|| (boundary1Type == RECTANGULAR_BOX
+						&& boundary2Type == CYLINDER)) {
+			double boundaryCylinder[6];
+			double boundaryBox[6];
+			//sort boundaries to unify calculations
+			if (boundary1Type == CYLINDER) {
+				for (int i = 0; i < 6; i++) {
+					boundaryCylinder[i] = boundary1[i];
+					boundaryBox[i] = boundary2[i];
+				}
+			} else {
+				for (int i = 0; i < 6; i++) {
+					boundaryCylinder[i] = boundary2[i];
+					boundaryBox[i] = boundary1[i];
+				}
+			}
+			//transform coordinates
+			int along = 0;
+			int across1 = 0;
+			int across2 = 0;
+			if (boundaryCylinder[4] == PLANE_XY) {
+				across1 = 0;
+				across2 = 1;
+				along = 2;
+			} else if (boundaryCylinder[4] == PLANE_XZ) {
+				across1 = 0;
+				along = 1;
+				across2 = 2;
+			} else if (boundaryCylinder[4] == PLANE_YZ) {
+				along = 0;
+				across1 = 1;
+				across2 = 2;
+			} else {
+				fprintf(stderr,
+						"ERROR: Cannot determine the orientation of a %s.\n",
+						boundaryString(boundary1Type));
+				return false;
+			}
+			// box inside circle area
+			if (sqrt(
+					squareDBL(
+							boundaryBox[across1 * 2]
+									- boundaryCylinder[across1])
+							+ squareDBL(
+									boundaryBox[across2 * 2]
+											- boundaryCylinder[across2]))
+					<= boundaryCylinder[3]
+					&& sqrt(
+							squareDBL(
+									boundaryBox[across1 * 2 + 1]
+											- boundaryCylinder[across1])
+									+ squareDBL(
+											boundaryBox[across2 * 2]
+													- boundaryCylinder[across2]))
+							<= boundaryCylinder[3]
+					&& sqrt(
+							squareDBL(
+									boundaryBox[across1 * 2]
+											- boundaryCylinder[across1])
+									+ squareDBL(
+											boundaryBox[across2 * 2 + 1]
+													- boundaryCylinder[across2]))
+							<= boundaryCylinder[3]
+					&& sqrt(
+							squareDBL(
+									boundaryBox[across1 * 2 + 1]
+											- boundaryCylinder[across1])
+									+ squareDBL(
+											boundaryBox[across2 * 2 + 1]
+													- boundaryCylinder[across2]))
+							<= boundaryCylinder[3]) {
+				//cross section is a rectangle
+				intersection[across1 * 2] = boundaryBox[across1 * 2];
+				intersection[across1 * 2 + 1] = boundaryBox[across1 * 2 + 1];
+				intersection[across2 * 2] = boundaryBox[across2 * 2];
+				intersection[across2 * 2 + 1] = boundaryBox[across2 * 2 + 1];
+
+				//length is the intersection of both lengths
+				intersection[along * 2] = fmax(boundaryBox[along * 2],
+						boundaryCylinder[along]);
+				intersection[along * 2] = fmin(boundaryBox[along * 2 + 1],
+						boundaryCylinder[along] + boundaryCylinder[5]);
+
+				return RECTANGULAR_BOX;
+			}
+			//or the circle is completely in the cross section of the box
+			else if (boundaryBox[across1 * 2]
+					<= boundaryCylinder[across1] - boundaryCylinder[3]
+					&& boundaryBox[across1 * 2 + 1]
+							>= boundaryCylinder[across1] + boundaryCylinder[3]
+					&& boundaryBox[across2 * 2]
+							<= boundaryCylinder[across2] - boundaryCylinder[3]
+					&& boundaryBox[across2 * 2 + 1]
+							>= boundaryCylinder[across2]
+									+ boundaryCylinder[3]) {
+				intersection[across1] = boundaryCylinder[across1];
+				intersection[across2] = boundaryCylinder[across2];
+				intersection[along] = fmax(boundaryCylinder[along],
+						boundaryBox[along * 2]);
+				intersection[3] = boundaryCylinder[3];
+				intersection[4] = boundaryCylinder[4];
+				intersection[5] = fmin(
+						(boundaryCylinder[along] + boundaryCylinder[5]),
+						boundaryBox[along * 2 + 1]) - intersection[along];
+				return CYLINDER;
+			} else {
+				fprintf(stderr,
+						"ERROR: Cannot determine the intersection of a %s and a %s if the cross section of one is not completely inside the other.\n",
+						boundaryString(boundary2Type),
+						boundaryString(boundary1Type));
+				return UNDEFINED_SHAPE;
+			}
 		} else {
 			// Intersection is invalid
 			fprintf(stderr,
