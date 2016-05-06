@@ -50,7 +50,6 @@
 #define SPHERE 3
 #define LINE 4
 #define UNDEFINED_SHAPE 5
-#define CYLINDER 6
 
 // Types of regions
 // NOTE: Changes to list of names must be reflected in file_io.c
