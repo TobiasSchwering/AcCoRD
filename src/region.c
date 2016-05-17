@@ -827,8 +827,11 @@ void findRegionTouch(const short NUM_REGIONS,
 								* sizeof(double[6]));
 				regionArray[i].regionNeighFaceDir[j] = malloc(
 						regionArray[i].numRegionNeighFace[j] * sizeof(short));
+				regionArray[i].boundRegionFaceShape[j] = malloc(
+						regionArray[i].numRegionNeighFace[j] * sizeof(int));
 				if (regionArray[i].boundRegionFaceCoor[j] == NULL
-						|| regionArray[i].regionNeighFaceDir[j] == NULL) {
+						|| regionArray[i].regionNeighFaceDir[j] == NULL
+						|| regionArray[i].boundRegionFaceShape[j] == NULL) {
 					fprintf(stderr,
 							"ERROR: Memory allocation for region %u (label: \"%s\")'s neighbor parameters with region %u (label: \"%s\").\n",
 							i, subvol_spec[i].label, j, subvol_spec[j].label);
@@ -862,10 +865,11 @@ void findRegionTouch(const short NUM_REGIONS,
 					}
 					break;
 				default:
-					// Calculate actual boundary
-					intersectBoundary(regionArray[i].spec.shape,
-							regionArray[i].boundary, regionArray[j].spec.shape,
-							regionArray[j].boundary,
+					// Calculate actual boundary and its shape
+					//TODO shapes added
+					*regionArray[i].boundRegionFaceShape[j] = intersectBoundary(
+							regionArray[i].spec.shape, regionArray[i].boundary,
+							regionArray[j].spec.shape, regionArray[j].boundary,
 							regionArray[i].boundRegionFaceCoor[j][0]);
 					regionArray[i].regionNeighFaceDir[j][0] =
 							regionArray[i].regionNeighDir[j];
@@ -1042,8 +1046,7 @@ double intersectRegionVolume(const short curRegion,
 			&& intersectType == RECTANGULAR_BOX) {
 		intersectType = RECTANGLE;
 	}
-	if (regionArray[curRegion].plane != PLANE_3D
-			&& intersectType == CYLINDER) {
+	if (regionArray[curRegion].plane != PLANE_3D && intersectType == CYLINDER) {
 		intersectType = CIRCLE;
 	}
 	if (bArea) {
@@ -1365,9 +1368,9 @@ void lockPointToRegion(double point[3], const short startRegion,
 		}
 
 		if (faceID == along * 2)
-			point[along] = regionArray[boundRegion].boundary[faceID];
+			point[along] = regionArray[boundRegion].boundary[along];
 		else if (faceID == along * 2 + 1)
-			point[along] = regionArray[boundRegion].boundary[faceID]
+			point[along] = regionArray[boundRegion].boundary[along]
 					+ regionArray[boundRegion].boundary[5];
 		else { // Arbitrarily adjust "furthest" coordinate to lock point to sphere surface
 			   //TODO: stolen from Spheres, does it still work?

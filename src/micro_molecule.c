@@ -85,9 +85,6 @@ void moveMolecule(ItemMol3D * molecule, double x, double y, double z) {
 	molecule->x = x;
 	molecule->y = y;
 	molecule->z = z;
-	if ((x < 0. && y < 0.) || z < 0.004 || z > 0.006) {
-		fprintf(stderr, "WARNING: Dropped out!\n");
-	}
 }
 
 // Move one molecule to the specified coordinates
@@ -96,9 +93,6 @@ void moveMoleculeRecent(ItemMolRecent3D * molecule, double x, double y,
 	molecule->x = x;
 	molecule->y = y;
 	molecule->z = z;
-	if ((x < 0. && y < 0.) || z < 0.004 || z > 0.006) {
-		fprintf(stderr, "WARNING: Dropped out!\n");
-	}
 }
 
 // Move ALL molecules in the list by the same standard deviation
@@ -169,17 +163,11 @@ void diffuseMolecules(const short NUM_REGIONS,
 					newPoint[0] = curNode->item.x;
 					newPoint[1] = curNode->item.y;
 					newPoint[2] = curNode->item.z;
-					if (newPoint[0] < 0. && newPoint[1] < 0.) {
-						fprintf(stderr, "WARNING: Dropped out!\n");
-					}
 
 					bReaction = false;
 					if (validateMolecule(newPoint, oldPoint, NUM_REGIONS,
 							curRegion, &newRegion, &transRegion, regionArray,
 							curType, &bReaction, &curRxn)) {
-						if (newPoint[0] < 0. || newPoint[1] < 0.) {
-							fprintf(stderr, "WARNING: Dropped out!\n");
-						}
 						// Molecule is still within region and no further action is required
 						prevNode = curNode;
 					} else {
@@ -287,9 +275,6 @@ void diffuseMolecules(const short NUM_REGIONS,
 				newPoint[1] = curNodeR->item.y;
 				newPoint[2] = curNodeR->item.z;
 
-				if (newPoint[2] < 0.) {
-					fprintf(stderr, "WARNING: Dropped out!\n");
-				}
 				// Once molecule is validated, we can proceed directly to transferring
 				// it to the relevant "normal" list and remove it from this list
 				bReaction = false;
@@ -633,7 +618,7 @@ bool followMolecule(const double startPoint[3], double endPoint[3],
 		const struct region regionArray[], short molType, bool * bReaction,
 		unsigned short * curRxn, unsigned int depth) {
 	short curNeigh, curRegion, closestNormal;
-	short curFace, nearestFace;
+	short curFace, nearestFace, returnFace;
 	double minDist, curDist, minNormalDist;
 	double curIntersectPoint[3];
 	double nearestIntersectPoint[3];
@@ -658,6 +643,8 @@ bool followMolecule(const double startPoint[3], double endPoint[3],
 	minNormalDist = INFINITY;
 	*endRegion = SHRT_MAX;
 	closestNormal = SHRT_MAX;
+	//TODO test stuff, remove!
+	int asd = 0;
 	for (curNeigh = 0; curNeigh < regionArray[startRegion].numRegionNeigh;
 			curNeigh++) {
 		curRegion = regionArray[startRegion].regionNeighID[curNeigh];
@@ -673,15 +660,24 @@ bool followMolecule(const double startPoint[3], double endPoint[3],
 			break;
 		default:
 			// Regions are adjacent. Only check adjacent plane
+			// TODO changed to check by bLineHitBoundary with actual face shape for cylinders
 			curFace = regionArray[startRegion].regionNeighDir[curRegion];
-			bCurIntersect =
-					bLineHitInfinitePlane(startPoint, lineVector, lineLength,
-							RECTANGULAR_BOX,
-							regionArray[startRegion].boundRegionFaceCoor[curRegion][0],
-							curFace, false, &curDist, curIntersectPoint)
-							&& bPointOnFace(curIntersectPoint, RECTANGULAR_BOX,
-									regionArray[startRegion].boundRegionFaceCoor[curRegion][0],
-									curFace);
+			returnFace = curFace;
+			bCurIntersect = bLineHitBoundary(startPoint, lineVector, lineLength,
+					* regionArray[startRegion].boundRegionFaceShape[curRegion],
+					regionArray[startRegion].boundRegionFaceCoor[curRegion][0],
+					&returnFace, curFace, false, &curDist, curIntersectPoint);
+
+
+			//TODO cleanup!
+//			bCurIntersect =
+//					bLineHitInfinitePlane(startPoint, lineVector, lineLength,
+//							RECTANGULAR_BOX,
+//							regionArray[startRegion].boundRegionFaceCoor[curRegion][0],
+//							curFace, false, &curDist, curIntersectPoint)
+//							&& bPointOnFace(curIntersectPoint, RECTANGULAR_BOX,
+//									regionArray[startRegion].boundRegionFaceCoor[curRegion][0],
+//									curFace);
 			break;
 		}
 
