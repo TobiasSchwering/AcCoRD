@@ -231,7 +231,7 @@ struct region { // Region boundary parameters
 	// this region to allow non-rectangle faces
 	// Only needed if this region is microscopic
 	// TODO added for cylinder integraion, might not be necessary
-	int ** boundRegionFaceShape;
+	short ** boundRegionFaceShape;
 
 	// 2D array of boundary coordinates for faces in boundary regions that overlap
 	// this region.

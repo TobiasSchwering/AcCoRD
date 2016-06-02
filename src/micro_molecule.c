@@ -643,8 +643,6 @@ bool followMolecule(const double startPoint[3], double endPoint[3],
 	minNormalDist = INFINITY;
 	*endRegion = SHRT_MAX;
 	closestNormal = SHRT_MAX;
-	//TODO test stuff, remove!
-	int asd = 0;
 	for (curNeigh = 0; curNeigh < regionArray[startRegion].numRegionNeigh;
 			curNeigh++) {
 		curRegion = regionArray[startRegion].regionNeighID[curNeigh];
@@ -664,20 +662,16 @@ bool followMolecule(const double startPoint[3], double endPoint[3],
 			curFace = regionArray[startRegion].regionNeighDir[curRegion];
 			returnFace = curFace;
 			bCurIntersect = bLineHitBoundary(startPoint, lineVector, lineLength,
-					* regionArray[startRegion].boundRegionFaceShape[curRegion],
+					*regionArray[startRegion].boundRegionFaceShape[curRegion],
 					regionArray[startRegion].boundRegionFaceCoor[curRegion][0],
 					&returnFace, curFace, false, &curDist, curIntersectPoint);
-
-
-			//TODO cleanup!
-//			bCurIntersect =
-//					bLineHitInfinitePlane(startPoint, lineVector, lineLength,
-//							RECTANGULAR_BOX,
-//							regionArray[startRegion].boundRegionFaceCoor[curRegion][0],
-//							curFace, false, &curDist, curIntersectPoint)
-//							&& bPointOnFace(curIntersectPoint, RECTANGULAR_BOX,
-//									regionArray[startRegion].boundRegionFaceCoor[curRegion][0],
-//									curFace);
+			//TODO: teststuff, remove!
+			if (bCurIntersect
+					&& !bPointInBoundary(curIntersectPoint,
+							regionArray[curRegion].spec.shape,
+							regionArray[curRegion].boundary)) // Something went wrong here because we are not actually
+																  // in the endRegion region (or its children)
+				fprintf(stderr, "ERROR: Implausible check results\n");
 			break;
 		}
 
@@ -850,6 +844,7 @@ bool followMolecule(const double startPoint[3], double endPoint[3],
 					pushFrac *= 0.1;
 					pushPoint(nearestIntersectPoint, curIntersectPoint,
 							lineLength * pushFrac, lineVector);
+
 				}
 
 				// Determine region that we should actually be in (could be child of *endRegion)

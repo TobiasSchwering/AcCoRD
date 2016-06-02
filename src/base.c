@@ -47,6 +47,7 @@
  */
 
 #include "base.h" // for "Public" declarations
+#include "float.h" //for DBL_MIN
 //
 // "Private" Declarations
 //
@@ -911,7 +912,8 @@ bool bLineHitBoundary(const double p1[3], const double L[3],
 				*d = (boundary1[along] - p1[along]) / L[along];
 			else if (curPlane == along * 2 + 1) //upper circular face
 				*d = (boundary1[along] + boundary1[5] - p1[along]) / L[along];
-			else { //mantle face
+			else if (boundary1[5] > 0.) { //mantle face, length necessary
+				//TODO update necessary, can still cause problems with tests against the outside
 				centerToP1[across1] = p1[across1] - boundary1[across1];
 				centerToP1[across2] = p1[across2] - boundary1[across2];
 				LDotCenterToP1 = L[across1] * centerToP1[across1]
@@ -924,7 +926,9 @@ bool bLineHitBoundary(const double p1[3], const double L[3],
 					*d = -LDotCenterToP1 + *d;
 				else
 					*d = -LDotCenterToP1 - *d;
-			}
+			} else
+				continue;
+
 			intersectPoint[0] = p1[0] + L[0] * (*d);
 			intersectPoint[1] = p1[1] + L[1] * (*d);
 			intersectPoint[2] = p1[2] + L[2] * (*d);
@@ -939,10 +943,40 @@ bool bLineHitBoundary(const double p1[3], const double L[3],
 			}
 		}
 		if (bIntersect) {
+			//TODO: teststuff, improve or remove!
+			if(boundary1[5] == 0. && sqrt(squareDBL(nearestIntersectPoint[across1] - boundary1[across1]) + squareDBL(nearestIntersectPoint[across2] - boundary1[across2])) > boundary1[3])
+				return false;
+
 			*d = minDist;
 			intersectPoint[0] = nearestIntersectPoint[0];
 			intersectPoint[1] = nearestIntersectPoint[1];
 			intersectPoint[2] = nearestIntersectPoint[2];
+			//TODO: added, test and validate
+			//it can happen due to different calculation methods that the intersect point is not regarded as
+			//inside the boundary by bPointInBoundary, which can lead to disastrous errors. so in this case
+			//the intersectPoint is slightly pushed into the cylinders cross section
+//			if (!bPointInBoundary(intersectPoint, boundary1Type, boundary1)) {
+//				double pushFrac = 1e-6;
+//				double vToCenter[3];
+//
+//				vToCenter[along] = 0.;
+//				vToCenter[across1] = boundary1[across1]
+//						- intersectPoint[across1];
+//				vToCenter[across2] = boundary1[across2]
+//						- intersectPoint[across2];
+//
+//				while (!bPointInBoundary(intersectPoint, boundary1Type,
+//						boundary1) && pushFrac < 0.0001) {
+//					pushFrac *= 2;
+//					pushPoint(nearestIntersectPoint, intersectPoint, pushFrac,
+//							vToCenter);
+//				}
+//				if (pushFrac >= 0.0001)
+//					fprintf(stderr,
+//							"ERROR: Failed to resolve inconsistency inside a %s.\n",
+//							boundaryString(boundary1Type));
+//			}
+//			return bPointInBoundary(intersectPoint, boundary1Type, boundary1);
 			return true;
 		}
 		return false;

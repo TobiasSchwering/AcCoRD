@@ -506,6 +506,8 @@ void delete_boundary_region_(const short NUM_REGIONS,
 						free(regionArray[i].boundRegionFaceCoor[j]);
 					if (regionArray[i].regionNeighFaceDir[j] != NULL)
 						free(regionArray[i].regionNeighFaceDir[j]);
+					if (regionArray[i].boundRegionFaceShape[j] != NULL)
+						free(regionArray[i].boundRegionFaceShape[j]);
 				}
 			}
 			if (regionArray[i].numRegionNeighFace != NULL)
@@ -514,6 +516,8 @@ void delete_boundary_region_(const short NUM_REGIONS,
 				free(regionArray[i].boundRegionFaceCoor);
 			if (regionArray[i].regionNeighFaceDir != NULL)
 				free(regionArray[i].regionNeighFaceDir);
+			if (regionArray[i].boundRegionFaceShape != NULL)
+				free(regionArray[i].boundRegionFaceShape);
 		}
 
 		if (!regionArray[i].spec.bMicro) {
@@ -828,7 +832,7 @@ void findRegionTouch(const short NUM_REGIONS,
 				regionArray[i].regionNeighFaceDir[j] = malloc(
 						regionArray[i].numRegionNeighFace[j] * sizeof(short));
 				regionArray[i].boundRegionFaceShape[j] = malloc(
-						regionArray[i].numRegionNeighFace[j] * sizeof(int));
+						regionArray[i].numRegionNeighFace[j] * sizeof(short));
 				if (regionArray[i].boundRegionFaceCoor[j] == NULL
 						|| regionArray[i].regionNeighFaceDir[j] == NULL
 						|| regionArray[i].boundRegionFaceShape[j] == NULL) {
@@ -1374,27 +1378,28 @@ void lockPointToRegion(double point[3], const short startRegion,
 					+ regionArray[boundRegion].boundary[5];
 		else { // Arbitrarily adjust "furthest" coordinate to lock point to sphere surface
 			   //TODO: stolen from Spheres, does it still work?
-			coorSq[across1] = squareDBL(
-					regionArray[boundRegion].boundary[across1]
-							- point[across1]);
-			coorSq[across2] = squareDBL(
-					regionArray[boundRegion].boundary[across2]
-							- point[across2]);
-			rSq = coorSq[across1] + coorSq[across2];
-
-			if (coorSq[across1] >= coorSq[across2])
-				lockInd = across1;
-			else
-				lockInd = across2;
-			if (point[lockInd] > regionArray[boundRegion].boundary[lockInd])
-				point[lockInd] = sqrt(
-						squareDBL(regionArray[boundRegion].boundary[3]) - rSq
-								+ coorSq[lockInd]);
-			else
-				point[lockInd] = -sqrt(
-						squareDBL(regionArray[boundRegion].boundary[3]) - rSq
-								+ coorSq[lockInd]);
-			point[lockInd] += regionArray[boundRegion].boundary[lockInd];
+			//TODO: removed for testing
+//			coorSq[across1] = squareDBL(
+//					regionArray[boundRegion].boundary[across1]
+//							- point[across1]);
+//			coorSq[across2] = squareDBL(
+//					regionArray[boundRegion].boundary[across2]
+//							- point[across2]);
+//			rSq = coorSq[across1] + coorSq[across2];
+//
+//			if (coorSq[across1] >= coorSq[across2])
+//				lockInd = across1;
+//			else
+//				lockInd = across2;
+//			if (point[lockInd] > regionArray[boundRegion].boundary[lockInd])
+//				point[lockInd] = sqrt(
+//						squareDBL(regionArray[boundRegion].boundary[3]) - rSq
+//								+ coorSq[lockInd]);
+//			else
+//				point[lockInd] = -sqrt(
+//						squareDBL(regionArray[boundRegion].boundary[3]) - rSq
+//								+ coorSq[lockInd]);
+//			point[lockInd] += regionArray[boundRegion].boundary[lockInd];
 		}
 		break;
 	default:
@@ -1942,10 +1947,13 @@ void allocateRegionNeighbors(const short NUM_REGIONS,
 					NUM_REGIONS * sizeof(regionArray[i].boundRegionFaceCoor));
 			regionArray[i].regionNeighFaceDir = malloc(
 					NUM_REGIONS * sizeof(regionArray[i].regionNeighFaceDir));
+			regionArray[i].boundRegionFaceShape = malloc(
+					NUM_REGIONS * sizeof(regionArray[i].numRegionNeighFace));
 
 			if (regionArray[i].numRegionNeighFace == NULL
 					|| regionArray[i].boundRegionFaceCoor == NULL
-					|| regionArray[i].regionNeighFaceDir == NULL) {
+					|| regionArray[i].regionNeighFaceDir == NULL
+					|| regionArray[i].numRegionNeighFace == NULL) {
 				fprintf(stderr,
 						"ERROR: Memory allocation for region %u (label: \"%s\")'s microscopic parameters.\n",
 						i, regionArray[i].spec.label);
