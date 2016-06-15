@@ -105,4 +105,9 @@
 #define RXN_RECEPTOR 2
 #define RXN_MEMBRANE 3
 
+// Flow Profiles
+// NOTE: Changes to list of names must be reflected in file_io.c
+#define UNIFORM 0
+#define LAMINAR 1
+
 #endif // GLOBAL_PARAM_H

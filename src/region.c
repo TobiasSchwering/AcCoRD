@@ -870,7 +870,6 @@ void findRegionTouch(const short NUM_REGIONS,
 					break;
 				default:
 					// Calculate actual boundary and its shape
-					//TODO shapes added
 					*regionArray[i].boundRegionFaceShape[j] = intersectBoundary(
 							regionArray[i].spec.shape, regionArray[i].boundary,
 							regionArray[j].spec.shape, regionArray[j].boundary,
@@ -1349,6 +1348,8 @@ void lockPointToRegion(double point[3], const short startRegion,
 		point[lockInd] += regionArray[boundRegion].boundary[lockInd];
 		break;
 	case CYLINDER:
+		// only checks against the faces as the locking to the mantle won't be more precise than previous calculations
+		// locking to the mantle could cause problems with finite double accuracy
 		;
 		int along = 0;
 		int across1 = 0;
@@ -1376,31 +1377,6 @@ void lockPointToRegion(double point[3], const short startRegion,
 		else if (faceID == along * 2 + 1)
 			point[along] = regionArray[boundRegion].boundary[along]
 					+ regionArray[boundRegion].boundary[5];
-		else { // Arbitrarily adjust "furthest" coordinate to lock point to sphere surface
-			   //TODO: stolen from Spheres, does it still work?
-			//TODO: removed for testing
-//			coorSq[across1] = squareDBL(
-//					regionArray[boundRegion].boundary[across1]
-//							- point[across1]);
-//			coorSq[across2] = squareDBL(
-//					regionArray[boundRegion].boundary[across2]
-//							- point[across2]);
-//			rSq = coorSq[across1] + coorSq[across2];
-//
-//			if (coorSq[across1] >= coorSq[across2])
-//				lockInd = across1;
-//			else
-//				lockInd = across2;
-//			if (point[lockInd] > regionArray[boundRegion].boundary[lockInd])
-//				point[lockInd] = sqrt(
-//						squareDBL(regionArray[boundRegion].boundary[3]) - rSq
-//								+ coorSq[lockInd]);
-//			else
-//				point[lockInd] = -sqrt(
-//						squareDBL(regionArray[boundRegion].boundary[3]) - rSq
-//								+ coorSq[lockInd]);
-//			point[lockInd] += regionArray[boundRegion].boundary[lockInd];
-		}
 		break;
 	default:
 		fprintf(stderr,

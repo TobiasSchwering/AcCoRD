@@ -3,7 +3,7 @@
  * (Actor-based Communication via Reaction-Diffusion)
  *
  * Copyright 2016 Adam Noel. All rights reserved.
- * 
+ *
  * For license details, read LICENSE.txt in the root AcCoRD directory
  * For user documentation, read README.txt in the root AcCoRD directory
  *
@@ -172,7 +172,7 @@ void loadConfig(const char * CONFIG_NAME, uint32_t customSEED,
 	}
 
 	//
-	// Transfer JSON content to Simulation Structure	
+	// Transfer JSON content to Simulation Structure
 	//
 
 	// Load Simulation Control Object
@@ -498,7 +498,7 @@ void loadConfig(const char * CONFIG_NAME, uint32_t customSEED,
 							exit(EXIT_FAILURE);
 						}
 
-						// Read in names of exception regions							
+						// Read in names of exception regions
 						curObjInner = cJSON_GetObjectItem(curObj,
 								"Exception Regions");
 						for (i = 0;
@@ -798,13 +798,29 @@ void loadConfig(const char * CONFIG_NAME, uint32_t customSEED,
 		// Load remaining parameters depending on region shape
 		if (curSpec->subvol_spec[curArrayItem].shape == RECTANGULAR_BOX
 				|| curSpec->subvol_spec[curArrayItem].shape == RECTANGLE) {
-			curSpec->subvol_spec[curArrayItem].radius = 0;
+			curSpec->subvol_spec[curArrayItem].radius = 0.;
+			curSpec->subvol_spec[curArrayItem].flowVelocity = 0.;
+			curSpec->subvol_spec[curArrayItem].flowProfile = UNIFORM;
 			// Check for existence of unnecessary parameters and display
 			// warnings if they are defined.
 			if (cJSON_bItemValid(curObj, "Radius", cJSON_Number)) {
 				bWarn = true;
 				printf(
 						"WARNING %d: Region %d does not need \"Radius\" defined. Ignoring.\n",
+						numWarn++, curArrayItem);
+			}
+
+			if (cJSON_bItemValid(curObj, "Flow Velocity", cJSON_Number)) {
+				bWarn = true;
+				printf(
+						"WARNING %d: Region %d does not need \"Flow Velocity\" defined. Ignoring.\n",
+						numWarn++, curArrayItem);
+			}
+
+			if (cJSON_bItemValid(curObj, "Flow Profile", cJSON_Number)) {
+				bWarn = true;
+				printf(
+						"WARNING %d: Region %d does not need \"Flow Profile\" defined. Ignoring.\n",
 						numWarn++, curArrayItem);
 			}
 
@@ -1002,10 +1018,51 @@ void loadConfig(const char * CONFIG_NAME, uint32_t customSEED,
 				curSpec->subvol_spec[curArrayItem].radius = cJSON_GetObjectItem(
 						curObj, "Radius")->valuedouble;
 			}
+
+			// Flow Velocity
+			if (!cJSON_bItemValid(curObj, "Flow Velocity", cJSON_Number)) { // Region does not have a valid Flow velocity
+				bWarn = true;
+				printf(
+						"WARNING %d: Region %d does not have a valid \"Flow Velocity\". Assigning default value \"0\".\n",
+						numWarn++, curArrayItem);
+				curSpec->subvol_spec[curArrayItem].flowVelocity = 0.;
+			} else {
+				curSpec->subvol_spec[curArrayItem].flowVelocity =
+						cJSON_GetObjectItem(curObj, "Flow Velocity")->valuedouble;
+			}
+
+
+			// Flow Profile
+			if (!cJSON_bItemValid(curObj, "Flow profile", cJSON_String)) { // Region does not have a defined Flow Profile
+				bWarn = true;
+				printf(
+						"WARNING %d: Region %d does not have a defined \"Flow Profile\". Setting to default value \"Uniform\".\n",
+						numWarn++, curArrayItem);
+				curSpec->subvol_spec[curArrayItem].flowProfile = UNIFORM;
+			} else {
+				tempString = stringWrite(
+						cJSON_GetObjectItem(curObj, "Flow Profile")->valuestring);
+				if (strcmp(tempString, "Uniform") == 0)
+					curSpec->subvol_spec[curArrayItem].flowProfile = UNIFORM;
+				else if (strcmp(tempString, "Laminar") == 0)
+					curSpec->subvol_spec[curArrayItem].flowProfile = LAMINAR;
+				else {
+					bWarn = true;
+					printf(
+							"WARNING %d: Region %d has an invalid \"Flow Profile\". Setting to default value \"Uniform\".\n",
+							numWarn++, curArrayItem);
+					curSpec->subvol_spec[curArrayItem].flowProfile = UNIFORM;
+				}
+				free(tempString);
+			}
+
+
 		}
 
 		else // Region is round
 		{
+			curSpec->subvol_spec[curArrayItem].flowVelocity = 0.;
+			curSpec->subvol_spec[curArrayItem].flowProfile = UNIFORM;
 			curSpec->subvol_spec[curArrayItem].sizeRect = 0;
 			curSpec->subvol_spec[curArrayItem].bMicro = true;
 			curSpec->subvol_spec[curArrayItem].numX = 1;
@@ -1049,6 +1106,20 @@ void loadConfig(const char * CONFIG_NAME, uint32_t customSEED,
 						numWarn++, curArrayItem);
 			}
 
+			if (cJSON_bItemValid(curObj, "Flow Velocity", cJSON_Number)) {
+				bWarn = true;
+				printf(
+						"WARNING %d: Region %d does not need \"Flow Velocity\" defined. Ignoring.\n",
+						numWarn++, curArrayItem);
+			}
+
+			if (cJSON_bItemValid(curObj, "Flow Profile", cJSON_Number)) {
+				bWarn = true;
+				printf(
+						"WARNING %d: Region %d does not need \"Flow Profile\" defined. Ignoring.\n",
+						numWarn++, curArrayItem);
+			}
+
 			// Region radius
 			if (!cJSON_bItemValid(curObj, "Radius", cJSON_Number)
 					|| cJSON_GetObjectItem(curObj, "Radius")->valuedouble < 0) { // Region does not have a valid Radius
@@ -1067,7 +1138,7 @@ void loadConfig(const char * CONFIG_NAME, uint32_t customSEED,
 
 		// Override region time step with global one
 		curSpec->subvol_spec[curArrayItem].dt = curSpec->DT_MICRO;
-		//curSpec->subvol_spec[curArrayItem].dt = 
+		//curSpec->subvol_spec[curArrayItem].dt =
 		//	cJSON_GetObjectItem(curObj,
 		//	"Time Step")->valuedouble;
 	}
@@ -1136,7 +1207,7 @@ void loadConfig(const char * CONFIG_NAME, uint32_t customSEED,
 					exit(EXIT_FAILURE);
 				}
 
-				// Read in names of regions							
+				// Read in names of regions
 				curObjInner = cJSON_GetObjectItem(curObj,
 						"List of Regions Defining Location");
 				for (i = 0; i < curSpec->actorSpec[curArrayItem].numRegion;

@@ -102,7 +102,8 @@ void diffuseMolecules(const short NUM_REGIONS,
 		ListMolRecent3D p_listRecent[NUM_REGIONS][NUM_MOL_TYPES],
 		const struct region regionArray[],
 		struct mesoSubvolume3D mesoSubArray[], struct subvolume3D subvolArray[],
-		double sigma[NUM_REGIONS][NUM_MOL_TYPES],
+		double sigma_diff[NUM_REGIONS][NUM_MOL_TYPES],
+		double delta_flow[NUM_REGIONS],
 		double DIFF_COEF[NUM_REGIONS][NUM_MOL_TYPES]) {
 	NodeMol3D * curNode, *prevNode, *nextNode;
 	NodeMolRecent3D * curNodeR;
@@ -124,7 +125,7 @@ void diffuseMolecules(const short NUM_REGIONS,
 	for (curRegion = 0; curRegion < NUM_REGIONS; curRegion++) {
 		for (curType = 0; curType < NUM_MOL_TYPES; curType++) {
 			if (isListMol3DEmpty(&p_list[curRegion][curType])
-					|| sigma[curRegion][curType] == 0.)
+					|| sigma_diff[curRegion][curType] == 0.)
 				continue; // No need to validate an empty list of molecules or ones that can't move
 
 			curNode = p_list[curRegion][curType];
@@ -140,7 +141,7 @@ void diffuseMolecules(const short NUM_REGIONS,
 	for (curRegion = 0; curRegion < NUM_REGIONS; curRegion++) {
 		for (curType = 0; curType < NUM_MOL_TYPES; curType++) {
 			if (isListMol3DEmpty(&p_list[curRegion][curType])
-					|| sigma[curRegion][curType] == 0.)
+					|| sigma_diff[curRegion][curType] == 0.)
 				continue; // No need to validate an empty list of molecules
 
 			curNode = p_list[curRegion][curType];
@@ -158,7 +159,14 @@ void diffuseMolecules(const short NUM_REGIONS,
 
 					// Diffuse molecule
 					diffuseOneMolecule(&curNode->item,
-							sigma[curRegion][curType]);
+							sigma_diff[curRegion][curType]);
+
+					// if the region is a cylinder, flow has to be processed
+					if (regionArray[curRegion].spec.shape == CYLINDER
+							&& delta_flow[curRegion] != 0.) {
+						processFlow(&curNode->item, regionArray[curRegion],
+								delta_flow[curRegion]);
+					}
 
 					newPoint[0] = curNode->item.x;
 					newPoint[1] = curNode->item.y;
@@ -361,6 +369,42 @@ void diffuseOneMoleculeRecent(ItemMolRecent3D * molecule, double DIFF_COEF) {
 	molecule->x = rd_normal(molecule->x, sigma);
 	molecule->y = rd_normal(molecule->y, sigma);
 	molecule->z = rd_normal(molecule->z, sigma);
+}
+
+// Move one molecule according to the present flow
+void processFlow(ItemMol3D* molecule, const struct region region, double delta) {
+	if (region.spec.flowProfile == UNIFORM) {
+		if (region.boundary[4] == PLANE_XY) {
+			molecule->z += delta;
+		} else if (region.boundary[4] == PLANE_XZ) {
+			molecule->y += delta;
+		} else if (region.boundary[4] == PLANE_YZ) {
+			molecule->x += delta;
+		}
+	} else if (region.spec.flowProfile == LAMINAR) {
+		if (region.boundary[4] == PLANE_XY) {
+			molecule->z += delta
+					* (1
+							- (squareDBL(region.boundary[0] - molecule->x)
+									+ squareDBL(
+											region.boundary[1] - molecule->y))
+									/ squareDBL(region.boundary[3]));
+		} else if (region.boundary[4] == PLANE_XZ) {
+			molecule->y += delta
+					* (1
+							- (squareDBL(region.boundary[0] - molecule->x)
+									+ squareDBL(
+											region.boundary[2] - molecule->z))
+									/ squareDBL(region.boundary[3]));
+		} else if (region.boundary[4] == PLANE_YZ) {
+			molecule->x += delta
+					* (1
+							- (squareDBL(region.boundary[1] - molecule->y)
+									+ squareDBL(
+											region.boundary[2] - molecule->z))
+									/ squareDBL(region.boundary[3]));
+		}
+	}
 }
 
 // Check first order reactions for all molecules in list
@@ -658,20 +702,12 @@ bool followMolecule(const double startPoint[3], double endPoint[3],
 			break;
 		default:
 			// Regions are adjacent. Only check adjacent plane
-			// TODO changed to check by bLineHitBoundary with actual face shape for cylinders
 			curFace = regionArray[startRegion].regionNeighDir[curRegion];
 			returnFace = curFace;
 			bCurIntersect = bLineHitBoundary(startPoint, lineVector, lineLength,
 					*regionArray[startRegion].boundRegionFaceShape[curRegion],
 					regionArray[startRegion].boundRegionFaceCoor[curRegion][0],
 					&returnFace, curFace, false, &curDist, curIntersectPoint);
-			//TODO: teststuff, remove!
-			if (bCurIntersect
-					&& !bPointInBoundary(curIntersectPoint,
-							regionArray[curRegion].spec.shape,
-							regionArray[curRegion].boundary)) // Something went wrong here because we are not actually
-																  // in the endRegion region (or its children)
-				fprintf(stderr, "ERROR: Implausible check results\n");
 			break;
 		}
 
@@ -1008,7 +1044,6 @@ bool isMoleculeObserved(ItemMol3D * molecule, int obsType, double boundary[]) {
 				+ squareDBL(molecule->y - boundary[1])
 				+ squareDBL(molecule->z - boundary[2]) <= boundary[4];
 	case CYLINDER:
-		//TODO changed, test and validate!
 		if (boundary[4] == PLANE_XY) {
 			return squareDBL(molecule->x - boundary[0])
 					+ squareDBL(molecule->y - boundary[1])

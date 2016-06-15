@@ -67,7 +67,7 @@ bool bPointInBoundary(const double point[3], const int boundary1Type,
 				&& point[2] >= boundary1[4] && point[2] <= boundary1[5]);
 	case SPHERE:
 		return (pointDistance(point, boundary1) <= boundary1[3]);
-	case CYLINDER: //TODO changed, finish and test
+	case CYLINDER:
 		if (boundary1[4] == PLANE_XY) {
 			return (point[2] >= boundary1[2]
 					&& point[2] <= (boundary1[2] + boundary1[5])
@@ -613,7 +613,7 @@ bool bBoundarySurround(const int boundary1Type, const double boundary1[],
 				return false;
 			// All fail cases have been tried
 			return true;
-		case CYLINDER: //TODO changed, finish and validate
+		case CYLINDER:
 			if (boundary2[4] == PLANE_XY) {
 				lengthcheck = boundary1[4] >= boundary2[2] + clearance
 						&& boundary1[5]
@@ -756,8 +756,7 @@ bool bBoundarySurround(const int boundary1Type, const double boundary1[],
 								>= boundary1[2] + boundary1[3] + clearance;
 			}
 			return areacheck && lengthcheck;
-		case CYLINDER: //TODO test and verify, perhaps add test with different orientations
-			//TODO spread this definition to other calculations! far more typo resistant
+		case CYLINDER:
 			if (boundary1[4] == boundary2[4]) {
 				int along = 0;
 				int across1 = 0;
@@ -875,7 +874,6 @@ bool bLineHitBoundary(const double p1[3], const double L[3],
 		}
 		return false;
 
-		//TODO: changed, test!
 		//a check whether the intersection is on the boundary should not be necessary
 		//as the nearest intersection is used
 	case CYLINDER:
@@ -935,7 +933,7 @@ bool bLineHitBoundary(const double p1[3], const double L[3],
 
 			if (*d > 0. && *d <= length && *d < minDist) {
 				bIntersect = true;
-				*planeID = curPlane; //TODO does this still work?
+				*planeID = curPlane;
 				minDist = *d;
 				nearestIntersectPoint[0] = intersectPoint[0];
 				nearestIntersectPoint[1] = intersectPoint[1];
@@ -944,39 +942,21 @@ bool bLineHitBoundary(const double p1[3], const double L[3],
 		}
 		if (bIntersect) {
 			//TODO: teststuff, improve or remove!
-			if(boundary1[5] == 0. && sqrt(squareDBL(nearestIntersectPoint[across1] - boundary1[across1]) + squareDBL(nearestIntersectPoint[across2] - boundary1[across2])) > boundary1[3])
+			if (boundary1[5] == 0.
+					&& sqrt(
+							squareDBL(
+									nearestIntersectPoint[across1]
+											- boundary1[across1])
+									+ squareDBL(
+											nearestIntersectPoint[across2]
+													- boundary1[across2]))
+							> boundary1[3])
 				return false;
 
 			*d = minDist;
 			intersectPoint[0] = nearestIntersectPoint[0];
 			intersectPoint[1] = nearestIntersectPoint[1];
 			intersectPoint[2] = nearestIntersectPoint[2];
-			//TODO: added, test and validate
-			//it can happen due to different calculation methods that the intersect point is not regarded as
-			//inside the boundary by bPointInBoundary, which can lead to disastrous errors. so in this case
-			//the intersectPoint is slightly pushed into the cylinders cross section
-//			if (!bPointInBoundary(intersectPoint, boundary1Type, boundary1)) {
-//				double pushFrac = 1e-6;
-//				double vToCenter[3];
-//
-//				vToCenter[along] = 0.;
-//				vToCenter[across1] = boundary1[across1]
-//						- intersectPoint[across1];
-//				vToCenter[across2] = boundary1[across2]
-//						- intersectPoint[across2];
-//
-//				while (!bPointInBoundary(intersectPoint, boundary1Type,
-//						boundary1) && pushFrac < 0.0001) {
-//					pushFrac *= 2;
-//					pushPoint(nearestIntersectPoint, intersectPoint, pushFrac,
-//							vToCenter);
-//				}
-//				if (pushFrac >= 0.0001)
-//					fprintf(stderr,
-//							"ERROR: Failed to resolve inconsistency inside a %s.\n",
-//							boundaryString(boundary1Type));
-//			}
-//			return bPointInBoundary(intersectPoint, boundary1Type, boundary1);
 			return true;
 		}
 		return false;
@@ -1110,7 +1090,7 @@ bool bPointOnFace(const double p1[3], const int boundary1Type,
 	case SPHERE:
 		// Trivially true
 		return true;
-	case CYLINDER: //TODO verify
+	case CYLINDER:
 		if (boundary1[4] == PLANE_XY) {
 			if (planeID == 4 || planeID == 5)
 				return (sqrt(
@@ -1513,109 +1493,53 @@ bool reflectPoint(const double oldPoint[3], const double L[3],
 		newPoint[2] -= dDistance * pIntMinusC[2];
 
 		return true;
-	case CYLINDER: //TODO reflections on the mantle taken from sphere and reduced to 2D, check!
-		//TODO a transformation to do all the checks just once would be fine!
+	case CYLINDER: //TODO changed to transformation, test and validate
+		; // dummy statement to allow declarations after a label
+		int along = 0;
+		int across1 = 0;
+		int across2 = 0;
+
 		if (boundary1[4] == PLANE_XY) {
-			switch (*planeID) {
-			case 4:
-				// Reflect off of lower z
-				newPoint[2] = boundary1[2] + boundary1[2] - curPoint[2];
-				return true;
-			case 5:
-				// Reflect off of upper z
-				newPoint[2] = boundary1[2] + boundary1[5] + boundary1[2]
-						+ boundary1[5] - curPoint[2];
-				return true;
-				//all other surfaces are a reflection on the mantle
-			case 0:
-			case 1:
-			case 2:
-			case 3:
-				pIntMinusC[0] = intersectPoint[0] - boundary1[0];
-				pIntMinusC[1] = intersectPoint[1] - boundary1[1];
-				dDistance = 2
-						* ((curPoint[0] - intersectPoint[0]) * pIntMinusC[0]
-								+ (curPoint[1] - intersectPoint[1])
-										* pIntMinusC[1])
-						/ (squareDBL(pIntMinusC[0]) + squareDBL(pIntMinusC[1]));
-				newPoint[0] -= dDistance * pIntMinusC[0];
-				newPoint[1] -= dDistance * pIntMinusC[1];
-				return true;
-			default:
-				fprintf(stderr,
-						"WARNING: Plane intersection ID %d invalid for a %s.\n",
-						*planeID, boundaryString(boundary1Type));
-				return false;
-			}
+			across1 = 0;
+			across2 = 1;
+			along = 2;
 		} else if (boundary1[4] == PLANE_XZ) {
-			switch (*planeID) {
-			case 2:
-				// Reflect off of lower y
-				newPoint[1] = boundary1[1] + boundary1[0] - curPoint[1];
-				return true;
-			case 3:
-				// Reflect off of upper y
-				newPoint[1] = boundary1[1] + boundary1[5] + boundary1[1]
-						+ boundary1[5] - curPoint[1];
-				return true;
-				//all other surfaces are a reflection on the mantle
-			case 0:
-			case 1:
-			case 4:
-			case 5:
-				pIntMinusC[0] = intersectPoint[0] - boundary1[0];
-				pIntMinusC[2] = intersectPoint[2] - boundary1[2];
-				dDistance = 2
-						* ((curPoint[0] - intersectPoint[0]) * pIntMinusC[0]
-								+ (curPoint[2] - intersectPoint[2])
-										* pIntMinusC[2])
-						/ (squareDBL(pIntMinusC[0]) + squareDBL(pIntMinusC[2]));
-				newPoint[0] -= dDistance * pIntMinusC[0];
-				newPoint[2] -= dDistance * pIntMinusC[2];
-				return true;
-			default:
-				fprintf(stderr,
-						"WARNING: Plane intersection ID %d invalid for a %s.\n",
-						*planeID, boundaryString(boundary1Type));
-				return false;
-			}
+			across1 = 0;
+			along = 1;
+			across2 = 2;
 		} else if (boundary1[4] == PLANE_YZ) {
-			switch (*planeID) {
-			case 0:
-				// Reflect off of lower x
-				newPoint[0] = boundary1[0] + boundary1[0] - curPoint[0];
-				return true;
-			case 1:
-				// Reflect off of upper x
-				newPoint[0] = boundary1[0] + boundary1[5] + boundary1[0]
-						+ boundary1[5] - curPoint[0];
-				return true;
-				//all other surfaces are a reflection on the mantle
-			case 2:
-			case 3:
-			case 4:
-			case 5:
-				pIntMinusC[1] = intersectPoint[1] - boundary1[1];
-				pIntMinusC[2] = intersectPoint[2] - boundary1[2];
-				dDistance = 2
-						* ((curPoint[1] - intersectPoint[1]) * pIntMinusC[1]
-								+ (curPoint[2] - intersectPoint[2])
-										* pIntMinusC[2])
-						/ (squareDBL(pIntMinusC[1]) + squareDBL(pIntMinusC[2]));
-				newPoint[1] -= dDistance * pIntMinusC[1];
-				newPoint[2] -= dDistance * pIntMinusC[2];
-				return true;
-			default:
-				fprintf(stderr,
-						"WARNING: Plane intersection ID %d invalid for a %s.\n",
-						*planeID, boundaryString(boundary1Type));
-				return false;
-			}
+			along = 0;
+			across1 = 1;
+			across2 = 2;
 		} else {
-			fprintf(stderr, "ERROR: Cannot reflect a point off of a %s.\n",
+			fprintf(stderr,
+					"ERROR: Cannot determine the orientation of a %s.\n",
 					boundaryString(boundary1Type));
 			return false;
 		}
+
+		if (*planeID == along * 2) { // Reflect off of lower face along axis
+			newPoint[along] = boundary1[along] + boundary1[along]
+					- curPoint[along];
+		} else if (*planeID == along * 2 + 1) { // Reflect off of upper face along axis
+			newPoint[along] = boundary1[along] + boundary1[5] + boundary1[along]
+					+ boundary1[5] - curPoint[along];
+		} else {
+			//all other surfaces are a reflection on the mantle
+			pIntMinusC[across1] = intersectPoint[across1] - boundary1[across1];
+			pIntMinusC[across2] = intersectPoint[across2] - boundary1[across2];
+			dDistance = 2
+					* ((curPoint[across1] - intersectPoint[across1])
+							* pIntMinusC[across1]
+							+ (curPoint[across2] - intersectPoint[across2])
+									* pIntMinusC[across2])
+					/ (squareDBL(pIntMinusC[across1])
+							+ squareDBL(pIntMinusC[across2]));
+			newPoint[across1] -= dDistance * pIntMinusC[across1];
+			newPoint[across2] -= dDistance * pIntMinusC[across2];
+		}
+		return true;
+
 	default:
 		fprintf(stderr,
 				"ERROR: Cannot reflect a point off of an unknown region.\n");
@@ -1679,7 +1603,6 @@ double distanceToBoundary(const double point[3], const int boundary1Type,
 		if (dist < 0)
 			dist = -dist;
 		return dist;
-	case CYLINDER: //TODO changed, check and finish
 	default:
 		fprintf(stderr,
 				"ERROR: Cannot determine the distance from a point to a %s.\n",
@@ -2206,6 +2129,46 @@ void uniformPointVolume(double point[3], const int boundaryType,
 
 				bNeedPoint = false;
 			}
+		}
+		return;
+	case CYLINDER:
+		//use rejection method to create point in cylinder
+		//TODO: new, test and validate
+
+		//transform coordinates
+		; //dummy statement to allow declarations after a label
+		int along = 0;
+		int across1 = 0;
+		int across2 = 0;
+		if (boundary1[4] == PLANE_XY) {
+			across1 = 0;
+			across2 = 1;
+			along = 2;
+		} else if (boundary1[4] == PLANE_XZ) {
+			across1 = 0;
+			along = 1;
+			across2 = 2;
+		} else if (boundary1[4] == PLANE_YZ) {
+			along = 0;
+			across1 = 1;
+			across2 = 2;
+		} else {
+			fprintf(stderr,
+					"ERROR: Cannot determine the orientation of a %s.\n",
+					boundaryString(boundaryType));
+			return;
+		}
+
+		bNeedPoint = true;
+		while (bNeedPoint) {
+			point[along] = uniformPoint(boundary1[along],
+					boundary1[along] + boundary1[5]);
+			point[across1] = uniformPoint(boundary1[across1] - boundary1[3],
+					boundary1[across1] + boundary1[3]);
+			point[across2] = uniformPoint(boundary1[across2] - boundary1[3],
+					boundary1[across2] + boundary1[3]);
+
+			bNeedPoint = !bPointInBoundary(point, boundaryType, boundary1);
 		}
 		return;
 	default:

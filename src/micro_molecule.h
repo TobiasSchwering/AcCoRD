@@ -104,12 +104,15 @@ void diffuseMolecules(const short NUM_REGIONS,
 	const struct region regionArray[],
 	struct mesoSubvolume3D mesoSubArray[],
 	struct subvolume3D subvolArray[],
-	double sigma[NUM_REGIONS][NUM_MOL_TYPES],
+	double sigma_diff[NUM_REGIONS][NUM_MOL_TYPES],
+	double sigma_flow[NUM_REGIONS],
 	double DIFF_COEF[NUM_REGIONS][NUM_MOL_TYPES]);
 
 void diffuseOneMolecule(ItemMol3D * molecule, double sigma);
 
 void diffuseOneMoleculeRecent(ItemMolRecent3D * molecule, double DIFF_COEF);
+
+void processFlow(ItemMol3D* molecule, const struct region curRegion, double delta);
 
 void rxnFirstOrder(ListMol3D * p_list,
 	const struct region regionArray,

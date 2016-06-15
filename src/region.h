@@ -120,6 +120,15 @@ struct spec_region3D { // Used to define a region of subvolumes
 	// Region time step
 	double dt;
 	
+	// Cylinders can have a flow along their axis, the velocity is stored here
+	double flowVelocity;
+
+	// Variance of a flow with normal distribution (0 for deterministic flow)
+	double flowVariance;
+
+	// Different flow profiles in Cylinders are implemented and can be specified here
+	int flowProfile;
+
 	// FUTURE MEMBERS (POTENTIAL)
 	// Indicator for presence of system boundary
 	// Details of region-specific reactions
