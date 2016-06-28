@@ -800,6 +800,7 @@ void loadConfig(const char * CONFIG_NAME, uint32_t customSEED,
 				|| curSpec->subvol_spec[curArrayItem].shape == RECTANGLE) {
 			curSpec->subvol_spec[curArrayItem].radius = 0.;
 			curSpec->subvol_spec[curArrayItem].flowVelocity = 0.;
+			curSpec->subvol_spec[curArrayItem].flowAcceleration = 0.;
 			curSpec->subvol_spec[curArrayItem].flowProfile = UNIFORM;
 			// Check for existence of unnecessary parameters and display
 			// warnings if they are defined.
@@ -814,6 +815,13 @@ void loadConfig(const char * CONFIG_NAME, uint32_t customSEED,
 				bWarn = true;
 				printf(
 						"WARNING %d: Region %d does not need \"Flow Velocity\" defined. Ignoring.\n",
+						numWarn++, curArrayItem);
+			}
+
+			if (cJSON_bItemValid(curObj, "Flow Acceleration", cJSON_Number)) {
+				bWarn = true;
+				printf(
+						"WARNING %d: Region %d does not need \"Flow Acceleration\" defined. Ignoring.\n",
 						numWarn++, curArrayItem);
 			}
 
@@ -927,7 +935,7 @@ void loadConfig(const char * CONFIG_NAME, uint32_t customSEED,
 					curSpec->subvol_spec[curArrayItem].numZ = 0;
 				}
 			}
-		} else if (curSpec->subvol_spec[curArrayItem].shape == CYLINDER) //TODO changed, finish and check!
+		} else if (curSpec->subvol_spec[curArrayItem].shape == CYLINDER)
 		{
 			curSpec->subvol_spec[curArrayItem].sizeRect = 0;
 			curSpec->subvol_spec[curArrayItem].bMicro = true;
@@ -1031,6 +1039,17 @@ void loadConfig(const char * CONFIG_NAME, uint32_t customSEED,
 						cJSON_GetObjectItem(curObj, "Flow Velocity")->valuedouble;
 			}
 
+			// Flow Acceleration
+			if (!cJSON_bItemValid(curObj, "Flow Acceleration", cJSON_Number)) { // Region does not have a valid Flow velocity
+				bWarn = true;
+				printf(
+						"WARNING %d: Region %d does not have a valid \"Flow Acceleration\". Assigning default value \"0\".\n",
+						numWarn++, curArrayItem);
+				curSpec->subvol_spec[curArrayItem].flowAcceleration = 0.;
+			} else {
+				curSpec->subvol_spec[curArrayItem].flowAcceleration =
+						cJSON_GetObjectItem(curObj, "Flow Acceleration")->valuedouble;
+			}
 
 			// Flow Profile
 			if (!cJSON_bItemValid(curObj, "Flow profile", cJSON_String)) { // Region does not have a defined Flow Profile
@@ -1062,6 +1081,7 @@ void loadConfig(const char * CONFIG_NAME, uint32_t customSEED,
 		else // Region is round
 		{
 			curSpec->subvol_spec[curArrayItem].flowVelocity = 0.;
+			curSpec->subvol_spec[curArrayItem].flowAcceleration = 0.;
 			curSpec->subvol_spec[curArrayItem].flowProfile = UNIFORM;
 			curSpec->subvol_spec[curArrayItem].sizeRect = 0;
 			curSpec->subvol_spec[curArrayItem].bMicro = true;
@@ -1110,6 +1130,13 @@ void loadConfig(const char * CONFIG_NAME, uint32_t customSEED,
 				bWarn = true;
 				printf(
 						"WARNING %d: Region %d does not need \"Flow Velocity\" defined. Ignoring.\n",
+						numWarn++, curArrayItem);
+			}
+
+			if (cJSON_bItemValid(curObj, "Flow Acceleration", cJSON_Number)) {
+				bWarn = true;
+				printf(
+						"WARNING %d: Region %d does not need \"Flow Acceleration\" defined. Ignoring.\n",
 						numWarn++, curArrayItem);
 			}
 
@@ -1262,6 +1289,9 @@ void loadConfig(const char * CONFIG_NAME, uint32_t customSEED,
 			} else if (strcmp(tempString, "Sphere") == 0) {
 				curSpec->actorSpec[curArrayItem].shape = SPHERE;
 				arrayLen = 4;
+			} else if (strcmp(tempString, "Cylinder") == 0) {
+				curSpec->actorSpec[curArrayItem].shape = CYLINDER;
+				arrayLen = 6;
 			} else {
 				bWarn = true;
 				printf(

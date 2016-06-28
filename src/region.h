@@ -123,6 +123,9 @@ struct spec_region3D { // Used to define a region of subvolumes
 	// Cylinders can have a flow along their axis, the velocity is stored here
 	double flowVelocity;
 
+	// The flow Velocity can be linearly increased or decreased over time. The eccleeration is stored here
+	double flowAcceleration;
+
 	// Variance of a flow with normal distribution (0 for deterministic flow)
 	double flowVariance;
 
