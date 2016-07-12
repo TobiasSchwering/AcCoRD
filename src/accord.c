@@ -746,12 +746,21 @@ fprintf									(stderr,"ERROR: Memory allocation to create molecule %"
 
 				//Update flow velocity according to its acceleration
 				for (i = 0; i < spec.NUM_REGIONS; i++)
-					if (regionArray[i].spec.bMicro)
+					if (regionArray[i].spec.bMicro) {
 						delta_flow[i] =
 								spec.DT_MICRO
 										* (regionArray[i].spec.flowVelocity
 												+ tCur
 														* regionArray[i].spec.flowAcceleration);
+						if (regionArray[i].spec.flowFunctionType == SINUS)
+							delta_flow[i] +=
+									spec.DT_MICRO
+											* regionArray[i].spec.flowFunctionAmplitude
+											* sin(
+													2 * PI
+															* regionArray[i].spec.flowFunctionFrequency
+															* tCur);
+					}
 
 				// Diffuse all microscopic molecules to valid locations and merge
 				// 2 sets of molecule lists into 1

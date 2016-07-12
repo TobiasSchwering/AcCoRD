@@ -801,6 +801,9 @@ void loadConfig(const char * CONFIG_NAME, uint32_t customSEED,
 			curSpec->subvol_spec[curArrayItem].radius = 0.;
 			curSpec->subvol_spec[curArrayItem].flowVelocity = 0.;
 			curSpec->subvol_spec[curArrayItem].flowAcceleration = 0.;
+			curSpec->subvol_spec[curArrayItem].flowFunctionType = LINEAR;
+			curSpec->subvol_spec[curArrayItem].flowFunctionFrequency = 0.;
+			curSpec->subvol_spec[curArrayItem].flowFunctionAmplitude = 0.;
 			curSpec->subvol_spec[curArrayItem].flowProfile = UNIFORM;
 			// Check for existence of unnecessary parameters and display
 			// warnings if they are defined.
@@ -829,6 +832,29 @@ void loadConfig(const char * CONFIG_NAME, uint32_t customSEED,
 				bWarn = true;
 				printf(
 						"WARNING %d: Region %d does not need \"Flow Profile\" defined. Ignoring.\n",
+						numWarn++, curArrayItem);
+			}
+
+			if (cJSON_bItemValid(curObj, "Flow Function Type", cJSON_Number)) {
+				bWarn = true;
+				printf(
+						"WARNING %d: Region %d does not need \"Flow Function Type\" defined. Ignoring.\n",
+						numWarn++, curArrayItem);
+			}
+
+			if (cJSON_bItemValid(curObj, "Flow Function Frequency",
+					cJSON_Number)) {
+				bWarn = true;
+				printf(
+						"WARNING %d: Region %d does not need \"Flow Function Frequency\" defined. Ignoring.\n",
+						numWarn++, curArrayItem);
+			}
+
+			if (cJSON_bItemValid(curObj, "Flow Function Amplitude",
+					cJSON_Number)) {
+				bWarn = true;
+				printf(
+						"WARNING %d: Region %d does not need \"Flow Function Amplitude\" defined. Ignoring.\n",
 						numWarn++, curArrayItem);
 			}
 
@@ -935,8 +961,7 @@ void loadConfig(const char * CONFIG_NAME, uint32_t customSEED,
 					curSpec->subvol_spec[curArrayItem].numZ = 0;
 				}
 			}
-		} else if (curSpec->subvol_spec[curArrayItem].shape == CYLINDER)
-		{
+		} else if (curSpec->subvol_spec[curArrayItem].shape == CYLINDER) {
 			curSpec->subvol_spec[curArrayItem].sizeRect = 0;
 			curSpec->subvol_spec[curArrayItem].bMicro = true;
 			if (cJSON_bItemValid(curObj, "Integer Subvolume Size",
@@ -1059,8 +1084,9 @@ void loadConfig(const char * CONFIG_NAME, uint32_t customSEED,
 						numWarn++, curArrayItem);
 				curSpec->subvol_spec[curArrayItem].flowProfile = UNIFORM;
 			} else {
-				tempString = stringWrite(
-						cJSON_GetObjectItem(curObj, "Flow Profile")->valuestring);
+				tempString =
+						stringWrite(
+								cJSON_GetObjectItem(curObj, "Flow Profile")->valuestring);
 				if (strcmp(tempString, "Uniform") == 0)
 					curSpec->subvol_spec[curArrayItem].flowProfile = UNIFORM;
 				else if (strcmp(tempString, "Laminar") == 0)
@@ -1075,6 +1101,89 @@ void loadConfig(const char * CONFIG_NAME, uint32_t customSEED,
 				free(tempString);
 			}
 
+			// Flow function type
+			if (!cJSON_bItemValid(curObj, "Flow Function Type", cJSON_String)) { // Region does not have a defined Flow Profile
+				bWarn = true;
+				printf(
+						"WARNING %d: Region %d does not have a defined \"Flow Function Type\". Setting to default value \"Linear\".\n",
+						numWarn++, curArrayItem);
+				curSpec->subvol_spec[curArrayItem].flowFunctionType = LINEAR;
+			} else {
+				tempString =
+						stringWrite(
+								cJSON_GetObjectItem(curObj,
+										"Flow Function Type")->valuestring);
+				if (strcmp(tempString, "Linear") == 0)
+					curSpec->subvol_spec[curArrayItem].flowFunctionType = LINEAR;
+				else if (strcmp(tempString, "Sinus") == 0)
+					curSpec->subvol_spec[curArrayItem].flowFunctionType = SINUS;
+				else {
+					bWarn = true;
+					printf(
+							"WARNING %d: Region %d has an invalid \"Flow Profile\". Possible function types are \"Linear\" or \"Sinus\". Setting to default value \"Uniform\".\n",
+							numWarn++, curArrayItem);
+					curSpec->subvol_spec[curArrayItem].flowFunctionType = LINEAR;
+				}
+				free(tempString);
+			}
+
+			// Flow Function Frequency
+			if (curSpec->subvol_spec[curArrayItem].flowFunctionType == LINEAR) {
+				curSpec->subvol_spec[curArrayItem].flowFunctionFrequency = 0.;
+				if (cJSON_bItemValid(curObj, "Flow Function Frequency",
+						cJSON_Number)) {
+					bWarn = true;
+					printf(
+							"WARNING %d: Flow function type of region %d does not need \"Flow Function Frequency\" defined. Ignoring.\n",
+							numWarn++, curArrayItem);
+				}
+			} else if (curSpec->subvol_spec[curArrayItem].flowFunctionType
+					== SINUS) {
+				if (!cJSON_bItemValid(curObj, "Flow Function Frequency",
+						cJSON_Number)
+						|| cJSON_GetObjectItem(curObj,
+								"Flow Function Frequency")->valuedouble < 0.) {
+					bWarn = true;
+					printf(
+							"WARNING %d: Flow function of region %d does not have a valid \"Flow Function Frequency\". Assigning default value \"0\".\n",
+							numWarn++, curArrayItem);
+					curSpec->subvol_spec[curArrayItem].flowFunctionFrequency =
+							0.;
+				} else {
+					curSpec->subvol_spec[curArrayItem].flowFunctionFrequency =
+							cJSON_GetObjectItem(curObj,
+									"Flow Function Frequency")->valuedouble;
+				}
+			}
+
+			// Flow Function Amplitude
+			if (curSpec->subvol_spec[curArrayItem].flowFunctionType == LINEAR) {
+				curSpec->subvol_spec[curArrayItem].flowFunctionAmplitude = 0.;
+				if (cJSON_bItemValid(curObj, "Flow Function Amplitude",
+						cJSON_Number)) {
+					bWarn = true;
+					printf(
+							"WARNING %d: Flow function type of region %d does not need \"Flow Function Amplitude\" defined. Ignoring.\n",
+							numWarn++, curArrayItem);
+				}
+			} else if (curSpec->subvol_spec[curArrayItem].flowFunctionType
+					== SINUS) {
+				if (!cJSON_bItemValid(curObj, "Flow Function Amplitude",
+						cJSON_Number)
+						|| cJSON_GetObjectItem(curObj,
+								"Flow Function Amplitude")->valuedouble < 0.) {
+					bWarn = true;
+					printf(
+							"WARNING %d: Flow function of region %d does not have a valid \"Flow Function Amplitude\". Assigning default value \"0\".\n",
+							numWarn++, curArrayItem);
+					curSpec->subvol_spec[curArrayItem].flowFunctionAmplitude =
+							0.;
+				} else {
+					curSpec->subvol_spec[curArrayItem].flowFunctionAmplitude =
+							cJSON_GetObjectItem(curObj,
+									"Flow Function Amplitude")->valuedouble;
+				}
+			}
 
 		}
 
@@ -1083,6 +1192,9 @@ void loadConfig(const char * CONFIG_NAME, uint32_t customSEED,
 			curSpec->subvol_spec[curArrayItem].flowVelocity = 0.;
 			curSpec->subvol_spec[curArrayItem].flowAcceleration = 0.;
 			curSpec->subvol_spec[curArrayItem].flowProfile = UNIFORM;
+			curSpec->subvol_spec[curArrayItem].flowFunctionType = LINEAR;
+			curSpec->subvol_spec[curArrayItem].flowFunctionFrequency = 0.;
+			curSpec->subvol_spec[curArrayItem].flowFunctionAmplitude = 0.;
 			curSpec->subvol_spec[curArrayItem].sizeRect = 0;
 			curSpec->subvol_spec[curArrayItem].bMicro = true;
 			curSpec->subvol_spec[curArrayItem].numX = 1;
@@ -1147,6 +1259,28 @@ void loadConfig(const char * CONFIG_NAME, uint32_t customSEED,
 						numWarn++, curArrayItem);
 			}
 
+			if (cJSON_bItemValid(curObj, "Flow Function Type", cJSON_Number)) {
+				bWarn = true;
+				printf(
+						"WARNING %d: Region %d does not need \"Flow Function Type\" defined. Ignoring.\n",
+						numWarn++, curArrayItem);
+			}
+
+			if (cJSON_bItemValid(curObj, "Flow Function Frequency",
+					cJSON_Number)) {
+				bWarn = true;
+				printf(
+						"WARNING %d: Region %d does not need \"Flow Function Frequency\" defined. Ignoring.\n",
+						numWarn++, curArrayItem);
+			}
+
+			if (cJSON_bItemValid(curObj, "Flow Function Amplitude",
+					cJSON_Number)) {
+				bWarn = true;
+				printf(
+						"WARNING %d: Region %d does not need \"Flow Function Amplitude\" defined. Ignoring.\n",
+						numWarn++, curArrayItem);
+			}
 			// Region radius
 			if (!cJSON_bItemValid(curObj, "Radius", cJSON_Number)
 					|| cJSON_GetObjectItem(curObj, "Radius")->valuedouble < 0) { // Region does not have a valid Radius

@@ -132,6 +132,15 @@ struct spec_region3D { // Used to define a region of subvolumes
 	// Different flow profiles in Cylinders are implemented and can be specified here
 	int flowProfile;
 
+	// Different functions of flow over time are implemented and can be specified here
+	int flowFunctionType;
+
+	// The frequency of cyclic functions can be specified here
+	double flowFunctionFrequency;
+
+	// the amplitude of the flow function can be specified here
+	double flowFunctionAmplitude;
+
 	// FUTURE MEMBERS (POTENTIAL)
 	// Indicator for presence of system boundary
 	// Details of region-specific reactions

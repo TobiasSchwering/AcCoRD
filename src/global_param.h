@@ -110,4 +110,10 @@
 #define UNIFORM 0
 #define LAMINAR 1
 
+
+// Flow function types
+// NOTE: Changes to list of names must be reflected in file_io.c
+#define LINEAR 0
+#define SINUS 1
+
 #endif // GLOBAL_PARAM_H
