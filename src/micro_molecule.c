@@ -157,6 +157,15 @@ void diffuseMolecules(const short NUM_REGIONS,
 					oldPoint[1] = curNode->item.y;
 					oldPoint[2] = curNode->item.z;
 
+					// if the region is a cylinder, flow has to be processed first
+					// as diffusion could place the molecule outside of the cylinder
+					// resulting in reversed flow velocity
+					if (regionArray[curRegion].spec.shape == CYLINDER
+							&& delta_flow[curRegion] != 0.) {
+						processFlow(&curNode->item, regionArray[curRegion],
+								delta_flow[curRegion]);
+					}
+
 					// Diffuse molecule
 					diffuseOneMolecule(&curNode->item,
 							sigma_diff[curRegion][curType]);
