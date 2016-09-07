@@ -170,13 +170,6 @@ void diffuseMolecules(const short NUM_REGIONS,
 					diffuseOneMolecule(&curNode->item,
 							sigma_diff[curRegion][curType]);
 
-					// if the region is a cylinder, flow has to be processed
-					if (regionArray[curRegion].spec.shape == CYLINDER
-							&& delta_flow[curRegion] != 0.) {
-						processFlow(&curNode->item, regionArray[curRegion],
-								delta_flow[curRegion]);
-					}
-
 					newPoint[0] = curNode->item.x;
 					newPoint[1] = curNode->item.y;
 					newPoint[2] = curNode->item.z;
