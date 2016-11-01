@@ -1,8 +1,9 @@
 
             The AcCoRD Simulator
             (Actor-based Communication via Reaction-Diffusion)
+	    with the extension of Cylinders and flow inside them
 
-This document is the README for AcCoRD v0.5 (public beta, 2016-04-15)
+This document extends the README for AcCoRD v0.5 (public beta, 2016-04-15)
 
 # Introduction
 
@@ -19,14 +20,7 @@ If you are a communications researcher who is interested in studying molecular c
 
 Development of AcCoRD is on-going and hosted on Github (https://github.com/adamjgnoel/AcCoRD).
 
-The executables (for Windows, Debian/Ubuntu, and RHEL/CentOS) are available here: https://github.com/adamjgnoel/AcCoRD/releases
-
-Existing bugs and planned features are described on the Issues page: https://github.com/adamjgnoel/AcCoRD/issues
-
-Most identified "bugs" in the issues page are either:
-
-1) Parameters ignored in configuration files because they haven't been implemented yet  
-2) Cases where the simulator does not recognize errors in the configuration file. These cases have been greatly reduced as of v0.5.
+The extensions are based on the version 0.5 of the AcCoRD main branch and can be also found on Github (https://github.com/TobiasSchwering/AcCoRD)
 
 # Background
 
@@ -38,79 +32,25 @@ While a formal publication on the design of AcCoRD is in preparation, the genera
 - A. Noel, K.C. Cheung, and R. Schober, On the Statistics of Reaction-Diffusion Simulations for Molecular Communication, in Proc. ACM NANOCOM 2015, Sep. 2015. DOI: http://dx.doi.org/10.1145/2800795.2800821 - the simulations in this paper were completed with proof-of-concept MATLAB code  
 - A. Noel, K.C. Cheung, and R. Schober, Multi-Scale Stochastic Simulation for Diffusive Molecular Communication, in Proc. IEEE ICC 2015, pp. 2712--2718, Jun. 2015. DOI: http://dx.doi.org/10.1109/ICC.2015.7248471 - the simulations in this paper were completed with AcCoRD v0.1, which was an early 2D build
 
-Additional documentation will be prepared as AcCoRD nears general public release. Until that time, please contact the developer or consider following AcCoRD on Github (https://github.com/adamjgnoel/accord) for the latest updates.
+The extensions for Cylindric regions and time dependent uniform and laminar flow inside them have been added for the examinations in the master thesis of Tobias Schwering. They are intended to be a fist approximation of blood vessels.
 
 # Feature Summary
 
-AcCoRD currently has the following "mature" features:
-* 3D multi-scale hybrid reaction-diffusion
-* Environment described as union of cubes and spheres. Cubes can be microscopic (track individual molecules) or mesoscopic (assume uniform molecule density throughout the cube). Spheres must be microscopic but can be infinite in size (i.e., unbounded environment).
-* Chemical reactions of 0th, 1st, and 2nd order in mesoscopic regime. No 2nd order reactions permitted in microscopic regime (for now).
-* Readable configuration and simulation output files. Configuration is described using the JSON interchange format. An import function can load output into MATLAB.
-* Flexible placement of molecule sources and observers, whose location can be defined as their own shapes or as the union of a set of regions
-* Molecule sources based on "Concentration Shift Keying" (CSK) modulation of independent symbols, with user-defined pulse widths and switches for stochastic or deterministic molecule release
-* Molecule observers record number of specified types of molecules (and optionally their positions) over a subset of the simulation environment.
-* Even in the microscopic regime, molecule creation and chemical reactions can occur on a time scale smaller than the microscopic time step.
-
-The following features have not been extensively tested and are considered in "beta":
-* Surfaces can surround all or part of 3D regions and be sites for local chemical reactions, such as molecule generation or absorption.
-* Membrane surfaces control transitions between neighboring 3D regions
-
-The following features have had very limited testing and are considered "alpha":
-* Environments described entirely in 2D, with diffusion across a union of 2D rectangles
-
-A complete version history can be found in CHANGELOG.txt
+The additions extend the main branch AcCoRD by the following features:
+- cylindric regions with much integration into the already existing functions. They have to be 'micro' regions
+- the possibility to add an axial flow with uniform or laminar profile to cylindrical regions
+- time-dependent flow functions, so far linear accel- or decelleration with an initial offset or sinusiodal flow with an optional offset are possible
 
 # Known Issues
 
-This list is current as of v0.5. See https://github.com/adamjgnoel/AcCoRD/issues for the latest details.
-* Simplified algorithms are used to handle molecule placement when transitioning between mesoscopic and microscopic regions
-* Chemical reactions in microscopic regions must be 0th or 1st order.
-* There is an option to set whether actor is independent but the value is ignored since dependent actors have not yet been implemented
-* There is an option to set whether active actor has a message of random bits but the value is ignored so that the bits are always random (though they can be set to all 1s or all 0s by setting probability to 1 or 0, respectively)
-* Active actor modulation scheme is presented as a configuration option but the only current valid choice is "CSK" (concentration shift keying)
-* The bit stream of active actors will always be written to the output file, independent of the setting of "Is Actor Activity Recorded?". This is because active actor emission is currently always random.
-* Point sources are not accommodated
-* All first-order reactions in a non-membrane surface region are treated as absorption reactions when a molecule of the corresponding reactant type collides with the surface. However, the "correct" absorption probability is only calculated for reactions that are explicitly defined as "Absorbing"
-* 2 regions must share an outer face in order to be classified as neighbors, unless one region is the parent of the other. So, if a child region is up against a face of its parent, and that parent also has a parent but doesn't share the same face with its parent, then the parent's parent will not be recognized as a neighbor of the child. In such a case molecule transitions between the child and the "grandparent" are not possible.
-* A child region is always assumed to be a neighbor of its parent, which is not strictly true but should not create a problem during a simulation
-* microscopic molecules in a spherical region may go a very small distance beyond the region boundary but are still believe to be inside the sphere. This is due to numerical underflow, and might mean that the potential chemical reactions for the molecule are inconsistent with its location.
-* A mesoscopic subvolume adjacent to a microscopic region needs that region to cover the entirety of every face that is adjacent to that region (i.e., part of the adjacent face should not also be adjacent to some other region). Otherwise the hybrid interface will not have proper transitions.
-* Actors that act at the same time will do so in a random order (this is by design). So, if an active actor is adding molecules at the exact time that a passive actor is supposed to observe them, it is unknown a priori which will act first. It will depend on whichever is currently ranked higher in the timer heap. This could be modified in the future to rank the actors in the order they are defined in the event that their timer values are the same.
-
-
-# Future Features
-
-Development of AcCoRD is active and on-going. See https://github.com/adamjgnoel/AcCoRD/issues for the latest details. Here is a list of planned end-user features in approximate order of priority:
-* Display warnings if user defines active actor parameters for a passive actor (or vice versa)
-* Allow dependent actors, whose behavior depends on the observations of passive actors. This would allow implementation of more complex communication networks (e.g., relays)
-* Add actors that track changes to molecule composition in their volumes
-* Add 2nd order chemical reactions in microscopic regions
-* Improve accuracy of transitions between microscopic and mesoscopic regions
-* Enable surfaces to mesoscopic regions
-* Write more MATLAB utility functions to perform common tasks with simulation output (e.g., plot average behavior, simulation statistics, bit error probabilities, and video of simulation progression)
-* Specify different diffusion coefficients for different regions
-* Use different microscopic time steps in different microscopic regions
-* Add checks on subvolume size relative to diffusion coefficients
-* Add "tau leaping" in mesoscopic regime to improve scalability
-* Allow user to specify the bits of an active actor transmission sequence
-* Add steady uniform flow
+see the list of the main branch AcCoRD version 0.5
 
 
 # Installation
 
-There are two installation options:
+No pre-compiled files are agiven for AcCoRD with these additions. So there is only one intall option:
 
-1) (BASIC) Use a pre-compiled binary from the releases page (https://github.com/adamjgnoel/AcCoRD/releases).
-Debug and optimized versions exist for Windows, Debian/Ubuntu Linux, and RHEL/CentOS Linux. No further action is required before running the simulator, unless file permissions need to be modified (e.g., in Linux, type "chmod +x FILENAME" in a terminal to enable execution of FILENAME). It is recommended to use a "config" folder to store configuration files and a "results" folder to store simulation output. AcCoRD will detect these folders automatically if they are in the working directory or are subdirectories of the working directory's parent.
-
-Windows binaries were compiled using GCC 4.9.3 on minGW and the C99 standard of C.
-Debian/Ubuntu binaries were compiled using GCC 4.8.4 and the C99 standard of C.
-RHEL/CentOS binaries were compiled using GCC 4.8.5 and the C99 standard of C.
-
-It is possible that you may need C libraries on your system that correspond to the compiler used to generate the pre-compiled binaries. If you have trouble getting the pre-compiled binaries to work, then it might be easier to try the advanced installation.
-
-2) (ADVANCED) Build from source code. This is needed if you want to use different compilation
+Build from source code. This is needed if you want to use different compilation
 parameters. The src directory contains scripts for Windows, Debian/Ubuntu, and RHEL/CentOS builds (note that the linux build scripts are identical except for the binary filenames in order to distinguish between them). Run a script from
 the command line while in the "src" directory and the binary will be placed in the "bin" directory. GCC and standard C libraries are required.
 * build_accord_opt_win.bat builds the optimized Windows version with executable accord_win.exe
@@ -177,8 +117,9 @@ Main AcCoRD files are copyright 2016 by Adam Noel under the "New BSD" license. F
 
 # Credits
 
-Developed and maintained by Adam Noel (http://www.adamnoel.ca)
+Main branch AcCoRD Developed and maintained by Adam Noel (http://www.adamnoel.ca)
+Additions Developed and maintained by Tobias Schwering at the Institute for Digital Communications of the University of Erlangen-Nürnberg
 
-Testing: M. Halimeh and T. Schwering
+Testing: T. Schwering
 
-Supervision and Support: Profs. K. C. Cheung, A. Hafid, D. Makrakis, and R. Schober.
+Supervision and Support of the additions: Prof. R. Schober., Dr. A. Noel, A. Ahmadzadeh, V.Jamali
